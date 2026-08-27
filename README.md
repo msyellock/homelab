@@ -40,7 +40,7 @@ Storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy install media).
 
 Getting the first server installed took two full evenings and produced six apparently unrelated failures — a boot menu that flickered back to Windows, a reset loop, a `grub rescue>` prompt, a sector read error, and finally `apt-get update` failing with exit 100. Firmware settings, boot modes, partition schemes, RAM, and the hard drive were all investigated and cleared.
 
-The cause was a single defective USB flash drive. Bad cells sit at fixed physical addresses, so the failure was perfectly reproducible while appearing to move between subsystems as the installer read different regions of the media.
+The cause was bad USB install media — a defective flash drive, a corrupt ISO, or both. The postmortem covers what the evidence did and didn't isolate.
 
 Two separate hypotheses pointed at a failing hard drive along the way — one from a misread GRUB error address, one from the drive's age. Both were tested with `smartctl` rather than acted on. Both were wrong: zero reallocated sectors, zero pending sectors, both drives healthy. Continuing to investigate rather than replacing hardware on those hypotheses is what eventually isolated the real cause.
 

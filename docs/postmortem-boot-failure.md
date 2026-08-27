@@ -11,7 +11,7 @@
 
 Installing Ubuntu Server on a 2012 Lenovo B590 took two full evenings and produced six failures that appeared to come from six different subsystems. Firmware settings, boot modes, partition schemes, system memory, network configuration, and the internal hard drive were each investigated and cleared.
 
-The cause was bad install media. Replacing the physical USB stick — with a freshly downloaded ISO — resolved everything.
+The cause was bad USB install media — a defective flash drive, a corrupt ISO, or both. The postmortem covers what the evidence did and didn't isolate.
 
 ---
 

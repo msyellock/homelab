@@ -46,10 +46,11 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 
 ## Repository structure
 
-- `docs/` — runbooks, postmortems, network documentation
-- `ansible/` — inventory and playbooks
-- `k8s/` — manifests
-- `scripts/` — utilities
+- [`docs/hosts.md`](docs/hosts.md) — machine inventory and network layout
+- [`docs/postmortem-boot-failure.md`](docs/postmortem-boot-failure.md) — install failure investigation
+- `ansible/` — inventory and playbooks *(planned)*
+- `k8s/` — manifests *(planned)*
+- `scripts/` — utilities *(planned)*
 ## Notes
 
 This is a learning lab, kept deliberately in the open — including the parts that went wrong. The failures are the useful record.

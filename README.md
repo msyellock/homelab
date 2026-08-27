@@ -45,6 +45,11 @@ The cause was a single defective USB flash drive. Bad cells sit at fixed physica
 Two separate hypotheses pointed at a failing hard drive along the way — one from a misread GRUB error address, one from the drive's age. Both were tested with `smartctl` rather than acted on. Both were wrong: zero reallocated sectors, zero pending sectors, both drives healthy. Continuing to investigate rather than replacing hardware on those hypotheses is what eventually isolated the real cause.
 
 ## Repository structure
+
+- `docs/` — runbooks, postmortems, network documentation
+- `ansible/` — inventory and playbooks
+- `k8s/` — manifests
+- `scripts/` — utilities
 ## Notes
 
 This is a learning lab, kept deliberately in the open — including the parts that went wrong. The failures are the useful record.

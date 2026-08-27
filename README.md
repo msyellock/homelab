@@ -36,7 +36,7 @@ Storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy install media).
 
 ## Notable
 
-**Postmortem: two evenings, six symptoms, one bad USB drive** *(writeup in progress)*
+**[Postmortem: two evenings, six symptoms, one bad USB drive](docs/postmortem-boot-failure.md)**
 
 Getting the first server installed took two full evenings and produced six apparently unrelated failures — a boot menu that flickered back to Windows, a reset loop, a `grub rescue>` prompt, a sector read error, and finally `apt-get update` failing with exit 100. Firmware settings, boot modes, partition schemes, RAM, and the hard drive were all investigated and cleared.
 

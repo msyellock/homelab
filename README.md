@@ -11,7 +11,7 @@ Everything here is real hardware — no cloud instances, no VMs standing in for 
 | `illntentpc` | Intel i5-1135G7, 16 GB | Windows 11 + WSL2 | Control node, Ansible *(planned)* |
 | `ubuntu-ThinkPad-T420s` | ThinkPad T420s, i5-2520M, 8 GB | Ubuntu 24.04 LTS | k3s server *(planned)* |
 | `ubuntuserver` | Lenovo B590, i3-2348M, 6 GB | Ubuntu Server 24.04 LTS | k3s agent *(planned)* |
-| `ChromeboxArch` | Acer, Celeron N3350, 4 GB, 27 GB eMMC | Arch Linux | Network services |
+| `chromebookubuntu` | Acer Chromebook 15, Celeron N3350, 4 GB, 29 GB eMMC | Ubuntu Server 24.04.4 | Network services |
 
 Storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy install media).
 
@@ -23,6 +23,8 @@ Storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy install media).
 - [x] Root filesystem extended online, 98 GB → 455 GB, no downtime
 - [x] SMART monitoring (`smartd`) deployed and verified across both servers
 - [x] Drive health baselines captured
+- [x] Ubuntu Server provisioned on `chromebookubuntu`, replacing Arch
+- [x] Broadcom BCM43228 wireless working on `ubuntuserver`
 
 **In progress**
 
@@ -48,6 +50,7 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 
 - [`docs/hosts.md`](docs/hosts.md) — machine inventory and network layout
 - [`docs/postmortem-boot-failure.md`](docs/postmortem-boot-failure.md) — install failure investigation
+- [`docs/decisions/`](docs/decisions) — architecture decision records
 - `ansible/` — inventory and playbooks *(planned)*
 - `k8s/` — manifests *(planned)*
 - `scripts/` — utilities *(planned)*

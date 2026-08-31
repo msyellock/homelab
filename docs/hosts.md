@@ -12,16 +12,36 @@ Portable storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy instal
 ## Network
 
 Subnet `192.168.1.0/24`, gateway `192.168.1.1` (Verizon Fios).
+DHCP dynamic range: `192.168.1.2` – `192.168.1.254`.
+
+All addresses below are DHCP reservations set on the router, so they persist
+across reboots and lease renewals.
 
 | Host | Interface | Hardware | MAC | Address |
 |---|---|---|---|---|
-| `ubuntuserver` | `enp4s0` | Realtek RTL8111/8168 Gigabit | `3c:97:0e:90:83:8f` | 192.168.1.160 (DHCP) |
-| `ubuntuserver` | `wlp3s0` | Broadcom BCM43228 802.11a/b/g/n | `9c:2a:70:88:4e:e9` | DHCP |
-| `chromebookubuntu` | `wlp1s0` | Intel Wireless 7265 (dual band AC) | `5c:5f:67:60:f0:ea` | 192.168.1.153 (DHCP) |
+| `illntentpc` | wired | — | `48:9e:bd:df:cc:97` | 192.168.1.161 |
+| `illntentpc` | wireless | — | `5c:61:99:5a:6a:0d` | 192.168.1.155 |
+| `ubuntu-ThinkPad-T420s` | `enp0s25` | Intel Gigabit | `f0:de:f1:d9:3a:80` | 192.168.1.162 |
+| `ubuntu-ThinkPad-T420s` | `wlp3s0` | — | `10:0b:a9:93:3f:04` | 192.168.1.163 |
+| `ubuntuserver` | `enp4s0` | Realtek RTL8111/8168 Gigabit | `3c:97:0e:90:83:8f` | 192.168.1.160 |
+| `ubuntuserver` | `wlp3s0` | Broadcom BCM43228 802.11a/b/g/n | `9c:2a:70:88:4e:e9` | 192.168.1.159 |
+| `chromebookubuntu` | `wlp1s0` | Intel Wireless 7265 (dual band AC) | `5c:5f:67:60:f0:ea` | 192.168.1.153 |
+
+### SSH targets
+
+| Host | Address |
+|---|---|
+| `ubuntu-ThinkPad-T420s` | 192.168.1.162 |
+| `ubuntuserver` | 192.168.1.160 |
+| `chromebookubuntu` | 192.168.1.153 |
 
 `ubuntuserver` runs wired for normal operation. Wireless is configured as a
 fallback — WiFi on a cluster node produces intermittent failures that are
-difficult to diagnose.
+difficult to diagnose. If the Ethernet cable is disconnected, the machine
+remains reachable at 192.168.1.159 instead.
+
+The reservations were set on a Verizon Fios router under
+**Advanced → Network Settings → IPv4 Address Distribution → Connection List**.
 
 ## Hardware baselines
 
@@ -86,11 +106,11 @@ disappears after an upgrade, check `sudo dkms status` first.
 This inconsistency should be resolved before Phase 1, since Ansible playbooks
 will otherwise need to handle two network stacks.
 
-See `decisions/003-networkmanager-on-b590.md`.
+See [`decisions/003-networkmanager-on-b590.md`](decisions/003-networkmanager-on-b590.md).
 
 ## To do
 
-- [ ] DHCP reservations for all hosts; record assigned addresses above
+- [x] DHCP reservations for all hosts
 - [ ] Rename hosts: `node01`, `node02`, `svc01`, `workstation`
 - [ ] SSH keypair generated on workstation, public key distributed
 - [ ] Password authentication disabled on all Linux hosts

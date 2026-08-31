@@ -12,7 +12,7 @@ Portable storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy instal
 ## Network
 
 Subnet `192.168.1.0/24`, gateway `192.168.1.1` (Verizon Fios).
-DHCP dynamic range: `192.168.1.2` – `192.168.1.254`.
+DHCP dynamic range: `192.168.1.100` – `192.168.1.254`.
 
 All addresses below are DHCP reservations set on the router, so they persist
 across reboots and lease renewals.

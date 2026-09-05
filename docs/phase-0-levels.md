@@ -262,9 +262,9 @@ write something down."
 
 Phase 0 is complete when:
 
-- [ ] Three hosts reachable by short name from the workstation
-- [ ] No passwords typed for SSH, anywhere
-- [ ] Password authentication rejected on all three
+- [X] Three hosts reachable by short name from the workstation
+- [X] No passwords typed for SSH, anywhere
+- [X] Password authentication rejected on all three
 - [ ] Firewalls active, SSH only
 - [ ] Lids close without consequence
 - [ ] Hostnames renamed and surviving reboot

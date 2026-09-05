@@ -266,8 +266,8 @@ Phase 0 is complete when:
 - [X] No passwords typed for SSH, anywhere
 - [X] Password authentication rejected on all three
 - [ ] Firewalls active, SSH only
-- [ ] Lids close without consequence
-- [ ] Hostnames renamed and surviving reboot
+- [X] Lids close without consequence
+- [X] Hostnames renamed and surviving reboot
 - [ ] Hosts resolve each other by name
 - [ ] Documented and committed
 

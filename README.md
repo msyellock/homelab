@@ -8,27 +8,29 @@ Everything here is real hardware — no cloud instances, no VMs standing in for 
 
 | Host | Hardware | OS | Role |
 |---|---|---|---|
-| `illntentpc` | Intel i5-1135G7, 16 GB | Windows 11 + WSL2 | Control node, Ansible *(planned)* |
-| `ubuntu-ThinkPad-T420s` | ThinkPad T420s, i5-2520M, 8 GB | Ubuntu 24.04 LTS | k3s server *(planned)* |
-| `ubuntuserver` | Lenovo B590, i3-2348M, 6 GB | Ubuntu Server 24.04 LTS | k3s agent *(planned)* |
-| `chromebookubuntu` | Acer Chromebook 15, Celeron N3350, 4 GB, 29 GB eMMC | Ubuntu Server 24.04.4 | Network services |
+| `illntentpc` | Intel i5-1135G7, 16 GB | Windows 11 + WSL2 | Workstation / Ansible control node |
+| `ubuntu` | ThinkPad T420s, i5-2520M, 8 GB | Ubuntu 24.04 LTS | k3s server *(planned)* |
+| `novo1` | Lenovo B590, i3-2348M, 6 GB | Ubuntu Server 24.04 LTS | k3s agent *(planned)* |
+| `chromebook` | Acer Chromebook 15, Celeron N3350, 4 GB, 29 GB eMMC | Ubuntu Server 24.04.4 | Network services |
 
-Storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy install media).
+Hostnames match SSH usernames by design — see [`docs/decisions/006-hostname-naming.md`](docs/decisions/006-hostname-naming.md).
+
+Storage: 250 GB portable SSD (backup target). The original 1 TB flash drive failed an integrity test — counterfeit capacity, failing controller — and was discarded; see `docs/hosts.md`.
 
 ## Status
 
 **Done**
 
-- [x] Bare-metal Ubuntu Server 24.04 provisioned on `ubuntuserver` — UEFI/GPT, LVM, OpenSSH
-- [x] Root filesystem extended online, 98 GB → 455 GB, no downtime
-- [x] SMART monitoring (`smartd`) deployed and verified across both servers
-- [x] Drive health baselines captured
-- [x] Ubuntu Server provisioned on `chromebookubuntu`, replacing Arch
-- [x] Broadcom BCM43228 wireless working on `ubuntuserver`
+- [x] Bare-metal Ubuntu Server 24.04 provisioned on `novo1` — UEFI/GPT, LVM, OpenSSH
+- [x] Ubuntu Server provisioned on `chromebook`, replacing Arch
+- [x] Root filesystems extended online with LVM — no downtime, on two hosts
+- [x] SMART monitoring (`smartd`) deployed and verified on both Lenovo hosts
+- [x] Drive health baselines captured across the fleet
+- [x] Broadcom BCM43228 wireless working on `novo1`
+- [x] **Phase 0 — SSH key auth, password auth disabled, UFW, hostnames, cross-host name resolution, lid handling — all three Linux hosts**
 
 **In progress**
 
-- [ ] Phase 0 — DHCP reservations, hostname scheme, SSH key distribution, password auth disabled, UFW
 - [ ] Phase 1 — Ansible: the whole lab configured from code
 - [ ] Phase 2 — Docker
 - [ ] Phase 3 — k3s cluster
@@ -42,18 +44,20 @@ Storage: 250 GB portable SSD (backup target), 1 TB flash (Ventoy install media).
 
 Getting the first server installed took two full evenings and produced six apparently unrelated failures — a boot menu that flickered back to Windows, a reset loop, a `grub rescue>` prompt, a sector read error, and finally `apt-get update` failing with exit 100. Firmware settings, boot modes, partition schemes, RAM, and the hard drive were all investigated and cleared.
 
-The cause was bad USB install media — a defective flash drive, a corrupt ISO, or both. The postmortem covers what the evidence did and didn't isolate.
+The cause was bad USB install media — a defective flash drive, a corrupt ISO, or both; the original investigation couldn't fully separate the two. A later integrity test on the same drive settled it: it failed at 66 GB of a claimed 1 TB, with USB timeouts and I/O errors throughout. Counterfeit capacity and a physically failing controller, confirmed independently of the original incident.
 
 Two separate hypotheses pointed at a failing hard drive along the way — one from a misread GRUB error address, one from the drive's age. Both were tested with `smartctl` rather than acted on. Both were wrong: zero reallocated sectors, zero pending sectors, both drives healthy. Continuing to investigate rather than replacing hardware on those hypotheses is what eventually isolated the real cause.
 
 ## Repository structure
 
-- [`docs/hosts.md`](docs/hosts.md) — machine inventory and network layout
+- [`docs/hosts.md`](docs/hosts.md) — machine inventory, network layout, hardware baselines, Phase 0 status
 - [`docs/postmortem-boot-failure.md`](docs/postmortem-boot-failure.md) — install failure investigation
+- [`docs/runbook-hostname-rename.md`](docs/runbook-hostname-rename.md) — hostname rename and cross-host resolution procedure
 - [`docs/decisions/`](docs/decisions) — architecture decision records
 - `ansible/` — inventory and playbooks *(planned)*
 - `k8s/` — manifests *(planned)*
 - `scripts/` — utilities *(planned)*
+
 ## Notes
 
 This is a learning lab, kept deliberately in the open — including the parts that went wrong. The failures are the useful record.

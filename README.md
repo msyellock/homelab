@@ -53,6 +53,10 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 - [`docs/hosts.md`](docs/hosts.md) — machine inventory, network layout, hardware baselines, Phase 0 status
 - [`docs/postmortem-boot-failure.md`](docs/postmortem-boot-failure.md) — install failure investigation
 - [`docs/runbook-hostname-rename.md`](docs/runbook-hostname-rename.md) — hostname rename and cross-host resolution procedure
+- [`docs/runbook-ssh-keys.md`](docs/runbook-ssh-keys.md) — SSH key generation and distribution across the fleet
+- [`docs/runbook-disable-password-auth.md`](docs/runbook-disable-password-auth.md) — disabling SSH password authentication
+- [`docs/runbook-lid-switch.md`](docs/runbook-lid-switch.md) — preventing lid close from suspending a laptop server
+- [`docs/runbook-ufw-setup.md`](docs/runbook-ufw-setup.md) — UFW firewall setup with safe enable ordering
 - [`docs/decisions/`](docs/decisions) — architecture decision records
 - `ansible/` — inventory and playbooks *(planned)*
 - `k8s/` — manifests *(planned)*

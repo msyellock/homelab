@@ -58,7 +58,7 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 - [`docs/runbook-lid-switch.md`](docs/runbook-lid-switch.md) — preventing lid close from suspending a laptop server
 - [`docs/runbook-ufw-setup.md`](docs/runbook-ufw-setup.md) — UFW firewall setup with safe enable ordering
 - [`docs/decisions/`](docs/decisions) — architecture decision records
-- - [`ansible/inventory.ini`](ansible/inventory.ini), [`ansible/ufw.yml`](ansible/ufw.yml) — inventory and first playbook (UFW) 
+- [`ansible/inventory.ini`](ansible/inventory.ini), [`ansible/ufw.yml`](ansible/ufw.yml) — inventory and first playbook (UFW) 
 - `k8s/` — manifests *(planned)*
 - `scripts/` — utilities *(planned)*
 

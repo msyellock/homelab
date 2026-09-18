@@ -48,6 +48,10 @@ The cause was bad USB install media — a defective flash drive, a corrupt ISO, 
 
 Two separate hypotheses pointed at a failing hard drive along the way — one from a misread GRUB error address, one from the drive's age. Both were tested with `smartctl` rather than acted on. Both were wrong: zero reallocated sectors, zero pending sectors, both drives healthy. Continuing to investigate rather than replacing hardware on those hypotheses is what eventually isolated the real cause.
 
+**[Decision: distributing an LLM council across the fleet](docs/decisions/008-llm-council-fleet-distribution.md)**
+
+Three free, local LLMs (Ollama, one per lab host) debate a prompt and vote, with a fourth model curating — no API cost, no rate limits. Built to actually use the fleet's spare compute instead of one box, and it surfaced a real hardware finding along the way: `chromebook`'s CPU has no AVX2 at all, which degrades JSON-schema-constrained decoding badly enough to look like an infinite loop rather than "slow." Code lives in [`services/llm-council/`](services/llm-council).
+
 ## Repository structure
 
 - [`docs/hosts.md`](docs/hosts.md) — machine inventory, network layout, hardware baselines, Phase 0 status
@@ -57,8 +61,10 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 - [`docs/runbook-disable-password-auth.md`](docs/runbook-disable-password-auth.md) — disabling SSH password authentication
 - [`docs/runbook-lid-switch.md`](docs/runbook-lid-switch.md) — preventing lid close from suspending a laptop server
 - [`docs/runbook-ufw-setup.md`](docs/runbook-ufw-setup.md) — UFW firewall setup with safe enable ordering
+- [`docs/runbook-ollama-lan-setup.md`](docs/runbook-ollama-lan-setup.md) — exposing Ollama's API across the LAN for multi-host inference
 - [`docs/decisions/`](docs/decisions) — architecture decision records
 - [`ansible/inventory.ini`](ansible/inventory.ini), [`ansible/ufw.yml`](ansible/ufw.yml) — inventory and first playbook (UFW) 
+- [`services/llm-council/`](services/llm-council) — distributed multi-model deliberation/vote pipeline (see ADR 008)
 - `k8s/` — manifests *(planned)*
 - `scripts/` — utilities *(planned)*
 

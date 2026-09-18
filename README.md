@@ -63,7 +63,7 @@ Three free, local LLMs (Ollama, one per lab host) debate a prompt and vote, with
 - [`docs/runbook-ufw-setup.md`](docs/runbook-ufw-setup.md) — UFW firewall setup with safe enable ordering
 - [`docs/runbook-ollama-lan-setup.md`](docs/runbook-ollama-lan-setup.md) — exposing Ollama's API across the LAN for multi-host inference
 - [`docs/decisions/`](docs/decisions) — architecture decision records
-- [`ansible/inventory.ini`](ansible/inventory.ini), [`ansible/ufw.yml`](ansible/ufw.yml) — inventory and first playbook (UFW) 
+- [`ansible/inventory.ini`](ansible/inventory.ini) — inventory; [`ansible/ufw.yml`](ansible/ufw.yml), [`ansible/SSH.yml`](ansible/SSH.yml), [`ansible/package.yml`](ansible/package.yml) — playbooks (UFW, password-auth disable, package install)
 - [`services/llm-council/`](services/llm-council) — distributed multi-model deliberation/vote pipeline (see ADR 009)
 - `k8s/` — manifests *(planned)*
 - `scripts/` — utilities *(planned)*

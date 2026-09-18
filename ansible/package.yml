@@ -1,0 +1,9 @@
+---
+- name: Ensure tree is installed
+  hosts: linux_hosts
+  become: yes
+  tasks:
+    - name: Ensure tree is installed
+      ansible.builtin.apt:
+        name: tree
+        state: present

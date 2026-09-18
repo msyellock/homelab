@@ -49,8 +49,17 @@ related reasoning on single-key, single-location key management.
 
 ### Firewalls
 
-UFW active on all three Linux hosts. Default deny incoming, default allow
-outgoing, SSH (22/tcp, IPv4 and IPv6) is the only inbound rule.
+UFW active on all three Linux hosts. Baseline: default deny incoming,
+default allow outgoing, SSH (22/tcp, IPv4 and IPv6) as the only inbound
+rule — see `runbook-ufw-setup.md`.
+
+As of 2026-09-18, all three hosts also allow inbound `11434/tcp`
+(Ollama's API) from the LAN subnet only, added for the distributed LLM
+council project — see `runbook-ollama-lan-setup.md` and
+`decisions/008-llm-council-fleet-distribution.md`. `chromebook`'s rule
+and Ollama install are still present but unused: the panel host moved
+to `novo1` after a hardware limitation was found there (ADR 008), and
+the rule on `chromebook` was never reverted.
 
 ```
 sudo ufw status verbose
@@ -58,9 +67,15 @@ sudo ufw status verbose
 ```
 Status: active
 Default: deny (incoming), allow (outgoing), disabled (routed)
-22/tcp      ALLOW IN  Anywhere
-22/tcp (v6) ALLOW IN  Anywhere (v6)
+22/tcp        ALLOW IN  Anywhere
+22/tcp (v6)   ALLOW IN  Anywhere (v6)
+11434/tcp     ALLOW IN  192.168.1.0/24
 ```
+
+Ollama's HTTP API has no authentication of its own — the LAN-only scope
+is the only thing standing between "anything on this subnet can submit
+inference requests" and fully open. Accepted under the same
+single-operator trust model as ADR 007.
 
 ### Name resolution
 
@@ -119,6 +134,29 @@ control — `wifi.powersave = 2` in
 intermittent association drops on the Broadcom card. `chromebook` remains
 on `systemd-networkd`. Divergence still open — see
 `decisions/003-networkmanager-on-b590.md`.
+
+### Pre-existing services removed from `novo1`
+`novo1` was running a substantial, undocumented service stack unrelated
+to this lab's plan: Nextcloud, Rocket.Chat (plus bundled Mongo), Wekan
+(plus FerretDB), Mosquitto, Prometheus, and sabnzbd, alongside several
+unused CLI snaps (`doctl`, `powershell`, `slcli`, `tldr`, `wormhole`).
+None of it appears in this repo's stated roles or phases. Removed
+2026-09-18 at operator request after a security review turned it up —
+each removal left a `snapd` recovery snapshot (~31-day window, `snap
+restore <id>` to undo). `novo1`'s snap list is now just the base
+runtimes, `canonical-livepatch`, and `snapd` — plus Ollama, installed
+for the LLM council project (see ADR 008).
+
+### CPU instruction set limits (`chromebook`, `novo1`)
+Neither `chromebook` (Celeron N3350) nor `novo1` (i3-2348M) supports
+AVX2/FMA — confirmed via `grep -E 'avx2|fma' /proc/cpuinfo` (empty on
+both). `chromebook` lacks even first-generation AVX; `novo1` has it.
+Relevant for any future CPU-bound compute placement on this fleet:
+llama.cpp-based inference (Ollama) on `chromebook` degraded badly
+enough under JSON-schema-constrained decoding to look like a hang
+rather than merely "slow" — see ADR 008. Not obviously relevant to
+non-ML workloads, but worth checking `/proc/cpuinfo` before assuming
+two "similar enough" hosts perform similarly on compute-heavy tasks.
 
 ### Chromebook WiFi latency (transient, resolved)
 First ping to `chromebook` after a period of inactivity has been observed

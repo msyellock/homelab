@@ -53,13 +53,14 @@ UFW active on all three Linux hosts. Baseline: default deny incoming,
 default allow outgoing, SSH (22/tcp, IPv4 and IPv6) as the only inbound
 rule — see `runbook-ufw-setup.md`.
 
-As of 2026-09-18, all three hosts also allow inbound `11434/tcp`
+As of 2026-09-18, `ubuntu` and `novo1` allow inbound `11434/tcp`
 (Ollama's API) from the LAN subnet only, added for the distributed LLM
 council project — see `runbook-ollama-lan-setup.md` and
-`decisions/009-llm-council-fleet-distribution.md`. `chromebook`'s rule
-and Ollama install are still present but unused: the panel host moved
-to `novo1` after a hardware limitation was found there (ADR 009), and
-the rule on `chromebook` was never reverted.
+`decisions/009-llm-council-fleet-distribution.md`. `chromebook` was
+part of this too initially, but its CPU turned out to lack AVX2 (ADR
+009), so the panel host moved to `novo1` and `chromebook`'s Ollama
+install, systemd unit, and the `11434` UFW rule were fully reverted —
+back to the SSH-only baseline.
 
 ```
 sudo ufw status verbose

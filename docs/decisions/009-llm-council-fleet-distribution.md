@@ -93,9 +93,11 @@ steps (systemd override to bind `0.0.0.0:11434`, UFW rule scoped to
   was a likely confound in the first measurement; performance after
   removal was not independently re-isolated from the AVX/host swap
   before this was written. See `docs/hosts.md` Notes for the cleanup.
-- `chromebook` still has Ollama and `gemma2:2b` installed — the UFW
-  rule and install were never reverted after the panel moved off it.
-  See Follow-up.
+- `chromebook` initially kept Ollama and `gemma2:2b` installed with
+  the UFW rule still open after the panel moved off it — reverted
+  2026-09-18 (see Follow-up, now checked off): Ollama service, binary,
+  model data, and the `11434` UFW rule all removed, back to the
+  SSH-only baseline.
 
 ## Follow-up
 
@@ -103,9 +105,8 @@ steps (systemd override to bind `0.0.0.0:11434`, UFW rule scoped to
       `runbook-ollama-lan-setup.md` into an Ansible playbook, consistent
       with Phase 1's direction — `ansible/ufw.yml` currently only covers
       the SSH-only baseline.
-- [ ] Decide whether to remove Ollama/`gemma2:2b` from `chromebook` or
-      repurpose it for something within its actual "Network services"
-      role, since it's currently installed and reachable but unused.
+- [x] Decide whether to remove Ollama/`gemma2:2b` from `chromebook` or
+      repurpose it — removed 2026-09-18, back to SSH-only baseline.
 - [ ] `council.py` has no auth/rate-limiting in front of the Ollama
       calls it makes. Revisit if the LAN trust model here ever changes
       (same caveat already tracked in ADR 007's follow-up).

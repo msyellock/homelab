@@ -77,6 +77,17 @@ is the only thing standing between "anything on this subnet can submit
 inference requests" and fully open. Accepted under the same
 single-operator trust model as ADR 007.
 
+**Finding, unscoped SSH:** unlike the Ollama rule above, SSH's `22/tcp`
+rule is `ALLOW IN Anywhere` on all three hosts — not scoped to
+`192.168.1.0/24`. Not an active exposure today: `PasswordAuthentication
+no` is verified on all three (see SSH section above), so a bare port
+scan gets nothing without the private key, which exists only on the
+workstation (ADR 006). Worth scoping to the LAN anyway the next time
+these UFW rules are touched, for the same reason the Ollama rule was
+scoped from the start — less exposed surface to a future SSH CVE or a
+misconfiguration that weakens auth, not a response to any current
+active risk.
+
 ### Name resolution
 
 `/etc/hosts` on each Linux host contains entries for the other two,

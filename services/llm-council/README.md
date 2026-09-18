@@ -8,7 +8,7 @@ final synthesis.
 
 Why this exists, and the hardware findings that shaped it (RAM ceiling
 on `illntentpc`, AVX2 gap on `chromebook`), are in
-[`docs/decisions/008-llm-council-fleet-distribution.md`](../../docs/decisions/008-llm-council-fleet-distribution.md).
+[`docs/decisions/009-llm-council-fleet-distribution.md`](../../docs/decisions/009-llm-council-fleet-distribution.md).
 The LAN setup steps this depends on are in
 [`docs/runbook-ollama-lan-setup.md`](../../docs/runbook-ollama-lan-setup.md).
 
@@ -54,7 +54,7 @@ no shell access) under `projects/<run_id>/`.
   (`MAX_TOKENS_JSON`/`MAX_TOKENS_TEXT`/`MAX_TOKENS_BUILD`). Without
   this, a small model fighting a JSON schema can generate for
   hundreds/thousands of tokens without converging — confirmed on
-  `chromebook`, see ADR 008 — which on slow hardware is
+  `chromebook`, see ADR 009 — which on slow hardware is
   indistinguishable from a hang. The cap doesn't fix slow hardware, it
   just bounds the worst case.
 

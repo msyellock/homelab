@@ -56,9 +56,9 @@ rule — see `runbook-ufw-setup.md`.
 As of 2026-09-18, all three hosts also allow inbound `11434/tcp`
 (Ollama's API) from the LAN subnet only, added for the distributed LLM
 council project — see `runbook-ollama-lan-setup.md` and
-`decisions/008-llm-council-fleet-distribution.md`. `chromebook`'s rule
+`decisions/009-llm-council-fleet-distribution.md`. `chromebook`'s rule
 and Ollama install are still present but unused: the panel host moved
-to `novo1` after a hardware limitation was found there (ADR 008), and
+to `novo1` after a hardware limitation was found there (ADR 009), and
 the rule on `chromebook` was never reverted.
 
 ```
@@ -145,7 +145,7 @@ None of it appears in this repo's stated roles or phases. Removed
 each removal left a `snapd` recovery snapshot (~31-day window, `snap
 restore <id>` to undo). `novo1`'s snap list is now just the base
 runtimes, `canonical-livepatch`, and `snapd` — plus Ollama, installed
-for the LLM council project (see ADR 008).
+for the LLM council project (see ADR 009).
 
 ### CPU instruction set limits (`chromebook`, `novo1`)
 Neither `chromebook` (Celeron N3350) nor `novo1` (i3-2348M) supports
@@ -154,7 +154,7 @@ both). `chromebook` lacks even first-generation AVX; `novo1` has it.
 Relevant for any future CPU-bound compute placement on this fleet:
 llama.cpp-based inference (Ollama) on `chromebook` degraded badly
 enough under JSON-schema-constrained decoding to look like a hang
-rather than merely "slow" — see ADR 008. Not obviously relevant to
+rather than merely "slow" — see ADR 009. Not obviously relevant to
 non-ML workloads, but worth checking `/proc/cpuinfo` before assuming
 two "similar enough" hosts perform similarly on compute-heavy tasks.
 

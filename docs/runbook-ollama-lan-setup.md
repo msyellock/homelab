@@ -9,7 +9,7 @@ machine.
 Any Linux host in the fleet that will host a model for another host to
 call. Applied to `ubuntu` and `novo1`; briefly applied to `chromebook`,
 since reverted in practice but not in config — see
-`docs/decisions/008-llm-council-fleet-distribution.md`.
+`docs/decisions/009-llm-council-fleet-distribution.md`.
 
 ## Prerequisites
 - Ollama installed:
@@ -70,7 +70,7 @@ Expected local address is `*:11434` (or `0.0.0.0:11434`), not
   (what Ollama runs under the hood) leans heavily on AVX2/FMA for its
   CPU path. A host without it can be slow enough, specifically under
   JSON-schema-constrained decoding, to look indistinguishable from a
-  hang rather than merely "slow." See ADR 008 for a case where this
+  hang rather than merely "slow." See ADR 009 for a case where this
   actually happened (`chromebook`, no AVX2 at all).
 
 ## Notes

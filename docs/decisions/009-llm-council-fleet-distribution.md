@@ -1,4 +1,4 @@
-# 008. Distribute the LLM council panel across the fleet
+# 009. Distribute the LLM council panel across the fleet
 
 **Date:** 2026-09-18
 **Status:** Accepted

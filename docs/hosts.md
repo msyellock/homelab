@@ -2,10 +2,13 @@
 
 | Hostname | Machine | CPU | RAM | Storage | OS | Role |
 |---|---|---|---|---|---|---|
-| `illntentpc` | HP | i5-1135G7 | 16 GB | 477 GB | Windows 11 | Workstation / Ansible control |
-| `ubuntu` | ThinkPad T420s | i5-2520M | 8 GB | 465 GB HDD (7200 RPM) | Ubuntu 24.04 | k3s server |
-| `novo1` | Lenovo B590 | i3-2348M | 6 GB | 465 GB HDD (5400 RPM) | Ubuntu Server 24.04 | k3s agent |
-| `chromebook` | Acer Chromebook 15 (Google "Sand") | Celeron N3350 | 4 GB | 29.1 GB eMMC | Ubuntu Server 24.04.4 | Network services |
+| `illntentpc` | HP Laptop 17-by4xxx | i5-1135G7 (4C/8T) | 16 GB | 477 GB NVMe (Intel SSDPEKNW512G8) | Windows 11 Home + WSL2 (Ubuntu 24.04) | Workstation / Ansible control |
+| `ubuntu` | ThinkPad T420s | i5-2520M (2C/4T) | 8 GB | 465 GB HDD (7200 RPM) | Ubuntu 24.04 (desktop install) | k3s server *(planned)*; fallback LLM host |
+| `novo1` | Lenovo B590 | i3-2348M (2C/4T) | 6 GB | 465 GB HDD (5400 RPM) | Ubuntu Server 24.04 | k3s agent *(planned)*; idle |
+| `chromebook` | Acer Chromebook 15 (Google "Sand") | Celeron N3350 (2C) | 4 GB | 29.1 GB eMMC | Ubuntu Server 24.04 | Network services *(planned; nothing deployed yet)* |
+| *(none)* | Samsung Galaxy Note 10+ 5G (SM-N976V) | Snapdragon 855 (8C) | 12 GB | 256 GB (229 GB user data) | Android 12 (One UI 4.1), debloated, + Termux | LLM inference node (below) |
+
+*Verified by polling each host on 2026-09-19 (see "State snapshot" in Notes).*
 
 Hostnames match SSH usernames by design — a single-operator lab, so the
 coupling between hostname and account was an acceptable tradeoff. See
@@ -14,9 +17,41 @@ coupling between hostname and account was an acceptable tradeoff. See
 Portable storage: 250 GB portable SSD (backup target), 1 TB flash — **failed
 integrity test, discarded.** See Notes.
 
+### LLM inference node: Galaxy Note 10+ (`SM-N976V`)
+
+A spare phone repurposed as a dedicated inference host for the LLM council
+(`decisions/009-llm-council-fleet-distribution.md`). It is the fleet's fastest
+compute for this job by a wide margin: about 9 tokens/s generation on a 3B model
+(Q4_K_M, 4 threads, measured), against about 1 token/s measured on `novo1`. It
+has no hostname and is not managed like the Linux hosts.
+
+- **What runs on it:** Termux (sideloaded GitHub build; no Play Store) with
+  llama.cpp built from source for ARMv8.2 + dot-product + fp16, and two
+  OpenAI-compatible `llama-server` processes (4 threads, 2048-token context, one
+  request at a time): `:8080` Gemma 2 2B (council Panelist C) and `:8081`
+  Llama 3.2 3B (Panelist A). Two models running at once share the CPU and memory
+  bandwidth, so they are effectively serialized (each gets about 60–65% of its
+  solo speed).
+- **How it was prepared:** factory reset, then about 190 preinstalled packages
+  removed for the user (carrier apps, Samsung consumer apps, Knox/MDM, Google Play
+  Store and Play services) with `pm uninstall --user 0` — reversible with
+  `cmd package install-existing` or a factory reset. Verizon variant: bootloader
+  locked, no root, no custom OS.
+- **Network and access:** Wi-Fi, `192.168.1.167` (DHCP, randomized private MAC).
+  Managed from `illntentpc` over Wireless debugging (adb; needs re-pairing after
+  a phone reboot) and a Termux `sshd` on port 8022 (key-only; the key exists only on
+  the workstation). Android has no firewall, so the `llama-server` ports rely on
+  their API keys instead: anything on the LAN can reach them and gets `401`
+  without the key. Keys live outside this repo.
+- **Caveats:** the servers and `sshd` do not survive a phone reboot (start
+  scripts live on the phone). Sustained load heats it: a 35-minute continuous run
+  while charging over USB took the battery to 45.8 °C and the CPU to 64 °C, so
+  long benchmark runs pause when the battery passes 42 °C.
+- Setup steps: `runbook-note10-llama-server.md`.
+
 ## Network
 
-Subnet `192.168.1.0/24`, gateway `192.168.1.1` (Verizon Fios).
+Subnet `192.168.1.0/24`, gateway `192.168.1.1` (Verizon Fios G3100 router).
 DHCP dynamic range: `192.168.1.100` – `192.168.1.254`.
 
 Reservations sit inside the dynamic range rather than the free `.2`–`.99`
@@ -25,13 +60,21 @@ renumbering into the static block would be a tidiness improvement, not a fix.
 
 | Host | Interface | Hardware | MAC | Address |
 |---|---|---|---|---|
-| `illntentpc` | wired | — | `48:9e:bd:df:cc:97` | 192.168.1.161 |
-| `illntentpc` | wireless | — | `5c:61:99:5a:6a:0d` | 192.168.1.155 |
+| `illntentpc` | wired | Realtek PCIe GbE | `48:9e:bd:df:cc:97` | 192.168.1.161 |
+| `illntentpc` | wireless | — | `5c:61:99:5a:6a:0d` | 192.168.1.155 *(adapter disconnected as of 2026-09-19; Ethernet in use)* |
 | `ubuntu` | `enp0s25` | Intel Gigabit | `f0:de:f1:d9:3a:80` | 192.168.1.162 |
 | `ubuntu` | `wlp3s0` | — | `10:0b:a9:93:3f:04` | 192.168.1.163 |
 | `novo1` | `enp4s0` | Realtek RTL8111/8168 Gigabit | `3c:97:0e:90:83:8f` | 192.168.1.160 |
 | `novo1` | `wlp3s0` | Broadcom BCM43228 802.11a/b/g/n | `9c:2a:70:88:4e:e9` | 192.168.1.159 |
 | `chromebook` | `wlp1s0` | Intel Wireless 7265 (dual band AC) | `5c:5f:67:60:f0:ea` | 192.168.1.153 |
+| Note 10+ | `wlan0` | Wi-Fi (phone SoC) | randomized (Android private MAC) | 192.168.1.167 *(DHCP)* |
+
+**ARP flux on `ubuntu` and `novo1`.** Both machines keep their wired and wireless
+interfaces up on the same subnet. Linux answers ARP for either of its addresses on
+either NIC by default, so a LAN sweep from the workstation (2026-09-19) sees the
+*wired* MAC for both `.160`/`.159` (`novo1`) and `.162`/`.163` (`ubuntu`): the
+wireless addresses effectively ride the wired link. Harmless as configured. Fixing
+it (`arp_ignore=1`, `arp_announce=2`, or dropping Wi-Fi while wired) is not applied.
 
 ### SSH
 
@@ -42,10 +85,23 @@ Aliased in `~/.ssh/config` on the workstation — `ssh novo1`, `ssh ubuntu`,
 `novo1` runs wired for normal operation (`.160`). Wireless (`.159`) is a
 fallback if the Ethernet cable is disconnected.
 
-Private key exists only on the workstation. The Linux hosts hold no
-private key and cannot SSH outward to one another or elsewhere — by
-design, not oversight. See `decisions/006-hostname-naming.md` for the
-related reasoning on single-key, single-location key management.
+The lab's private key exists only on the workstation, and the Linux hosts
+are not meant to SSH outward to one another or elsewhere — by design, not
+oversight. See `decisions/006-hostname-naming.md` for the related reasoning on
+single-key, single-location key management. A second key on the workstation
+(`note10_ed25519`) authorizes the Note 10+'s Termux `sshd` (port 8022) and nothing
+else. Effective `sshd` config re-verified on all three hosts on 2026-09-19:
+`passwordauthentication no`, `pubkeyauthentication yes`, `permitrootlogin
+without-password`.
+
+**Finding, leftover private key on `ubuntu`.** Contrary to the paragraph above,
+`ubuntu` holds a passphrase-less private key (`~/.ssh/id_ed25519`, comment
+`ubuntu@ubuntu-ThinkPad-T420s`, created 2025-10-30, before the lab's key setup). It
+is not authorized on any lab host (checked against all three `authorized_keys`), so
+it is not part of the lab's access path; but if it is authorized anywhere else,
+that is a credential sitting unprotected on a machine that is supposed to hold none.
+Delete it if it is not used. Also harmless: `chromebook`'s `authorized_keys` lists
+the workstation key twice.
 
 ### Firewalls
 
@@ -53,14 +109,19 @@ UFW active on all three Linux hosts. Baseline: default deny incoming,
 default allow outgoing, SSH (22/tcp, IPv4 and IPv6) as the only inbound
 rule — see `runbook-ufw-setup.md`.
 
-As of 2026-09-18, `ubuntu` and `novo1` allow inbound `11434/tcp`
-(Ollama's API) from the LAN subnet only, added for the distributed LLM
-council project — see `runbook-ollama-lan-setup.md` and
-`decisions/009-llm-council-fleet-distribution.md`. `chromebook` was
-part of this too initially, but its CPU turned out to lack AVX2 (ADR
-009), so the panel host moved to `novo1` and `chromebook`'s Ollama
-install, systemd unit, and the `11434` UFW rule were fully reverted —
-back to the SSH-only baseline.
+Only `ubuntu` currently allows inbound `11434/tcp` (Ollama's API) from the
+LAN subnet, added on 2026-09-18 for the distributed LLM council project — see
+`runbook-ollama-lan-setup.md` and
+`decisions/009-llm-council-fleet-distribution.md`. It is now the council's
+fallback host (Panelist A); the rest of the council's inference runs on the
+Note 10+. The other two hosts were rolled back to the SSH-only baseline:
+`chromebook` first (its CPU lacks AVX2 entirely, ADR 009), then `novo1` on
+2026-09-19, when the panel moved to the phone — its Ollama service, binary,
+models, `ollama` user and the `11434` UFW rule were all removed. Re-verified on
+2026-09-19: `ufw status` on `novo1` and `chromebook` shows only `22/tcp` (v4 and
+v6), and nothing listens on `11434` on either.
+
+`ubuntu`'s ruleset, the only one that differs from the baseline:
 
 ```
 sudo ufw status verbose
@@ -76,9 +137,11 @@ Default: deny (incoming), allow (outgoing), disabled (routed)
 Ollama's HTTP API has no authentication of its own — the LAN-only scope
 is the only thing standing between "anything on this subnet can submit
 inference requests" and fully open. Accepted under the same
-single-operator trust model as ADR 007.
+single-operator trust model as ADR 007. The Note 10+'s `llama-server` ports
+(`8080`, `8081`) are different: Android has no firewall, so they are reachable from
+the whole LAN, but they enforce an API key (`401` without it).
 
-**Finding, unscoped SSH:** unlike the Ollama rule above, SSH's `22/tcp`
+**Finding, unscoped SSH (re-verified 2026-09-19):** unlike the Ollama rule above, SSH's `22/tcp`
 rule is `ALLOW IN Anywhere` on all three hosts — not scoped to
 `192.168.1.0/24`. Not an active exposure today: `PasswordAuthentication
 no` is verified on all three (see SSH section above), so a bare port
@@ -106,17 +169,21 @@ running daemon does not re-read its config file on its own.
 
 ## Hardware baselines
 
-Captured 2026-08-27.
+Captured 2026-08-27; re-checked 2026-09-19.
 
-| Host | Drive | Health |
-|---|---|---|
-| `novo1` | HGST HTS545050A7E380 (Travelstar Z5K500) | 0 reallocated sectors, 0 pending, 20 reallocation events, 14,165 power-on hours |
-| `ubuntu` | HGST HTS725050A7E630 (Travelstar Z7K500) | 0 reallocated sectors, 0 pending, 0 events, 3,099 power-on hours |
-| `chromebook` | eMMC, soldered | `life_time 0x01 0x03`, `pre_eol_info 0x01` — 20–30% of write cycles consumed on the user area |
+| Host | Drive | Health, 2026-08-27 | Health, 2026-09-19 |
+|---|---|---|---|
+| `novo1` | HGST HTS545050A7E380 (Travelstar Z5K500) | 0 reallocated sectors, 0 pending, 20 reallocation events, 14,165 power-on hours | unchanged: 0 / 0 / 20 events, SMART PASSED, 14,737 power-on hours, 47 °C |
+| `ubuntu` | HGST HTS725050A7E630 (Travelstar Z7K500) | 0 reallocated sectors, 0 pending, 0 events, 3,099 power-on hours | unchanged: 0 / 0 / 0, SMART PASSED, 3,597 power-on hours |
+| `chromebook` | eMMC, soldered | `life_time 0x01 0x03`, `pre_eol_info 0x01` — 20–30% of write cycles consumed on the user area | unchanged |
+| `illntentpc` | Intel SSDPEKNW512G8 NVMe, 477 GB | — | Windows reports Healthy / OK (no SMART detail collected); 120 GB free |
+| Note 10+ | internal UFS | — | 229 GB user partition, 9% used |
 
 `smartd` enabled and running on both Lenovo hosts. eMMC has no SMART
 support; `/sys/block/mmcblk1/device/` reports the equivalent values.
-Chromebook storage is soldered and not replaceable — keep workloads
+`chromebook`'s `smartd` unit is in a `failed` state (since 2026-09-15): expected,
+since there is no SMART device for it to monitor; disabling it would clear the
+failure. Chromebook storage is soldered and not replaceable — keep workloads
 read-mostly.
 
 ## Notes
@@ -135,8 +202,17 @@ sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
 
 ### Broadcom wireless on `novo1`
 BCM43228 had no in-tree driver (`lshw` showed `driver=bcma-pci-bridge`).
-Resolved with `bcmwl-kernel-source` (DKMS — rebuilds on kernel updates,
-check `dkms status` if wireless disappears after an upgrade).
+Resolved with the proprietary `wl` driver, packaged as `broadcom-sta-dkms`
+(6.30.223.271; DKMS — rebuilds on kernel updates, check `dkms status` if wireless
+disappears after an upgrade). Re-checked 2026-09-19: `wl` loaded, interface up,
+Wi-Fi power-save off. (This note previously named the package
+`bcmwl-kernel-source`; the installed package is `broadcom-sta-dkms`.)
+
+### GPU and NVIDIA driver on `novo1`
+Besides the Intel integrated graphics, the B590 carries an NVIDIA GeForce 610M
+(GF119M). The NVIDIA userspace stack and a DKMS driver (`615.71.09`, built for
+both installed kernels) are installed on this headless server. Not documented
+anywhere before; unused by any workload here.
 
 ### Network backend on `novo1`
 Running NetworkManager (`systemd-networkd` disabled, `renderer:
@@ -156,13 +232,18 @@ None of it appears in this repo's stated roles or phases. Removed
 2026-09-18 at operator request after a security review turned it up —
 each removal left a `snapd` recovery snapshot (~31-day window, `snap
 restore <id>` to undo). `novo1`'s snap list is now just the base
-runtimes, `canonical-livepatch`, and `snapd` — plus Ollama, installed
-for the LLM council project (see ADR 009).
+runtimes, `canonical-livepatch`, and `snapd`. Ollama was installed here
+for the LLM council project (ADR 009) and removed again on 2026-09-19 when
+the panel moved to the Note 10+.
 
-### CPU instruction set limits (`chromebook`, `novo1`)
-Neither `chromebook` (Celeron N3350) nor `novo1` (i3-2348M) supports
-AVX2/FMA — confirmed via `grep -E 'avx2|fma' /proc/cpuinfo` (empty on
-both). `chromebook` lacks even first-generation AVX; `novo1` has it.
+### CPU instruction set limits (`chromebook`, `novo1`, `ubuntu`)
+None of the three Linux hosts supports AVX2/FMA — confirmed via `grep -E
+'avx2|fma' /proc/cpuinfo` (empty on each; `ubuntu`'s i5-2520M is the same
+Sandy Bridge generation as `novo1`'s Ivy Bridge, re-checked 2026-09-19).
+`chromebook` lacks even first-generation AVX; `novo1` and `ubuntu` have it.
+Hardware virtualization (the `vmx` flag) is exposed on `novo1` and `chromebook`
+but not on `ubuntu`; its i5-2520M supports VT-x, so it is presumably switched off
+in the firmware. Worth knowing if VMs or a hypervisor are ever considered.
 Relevant for any future CPU-bound compute placement on this fleet:
 llama.cpp-based inference (Ollama) on `chromebook` degraded badly
 enough under JSON-schema-constrained decoding to look like a hang
@@ -187,6 +268,29 @@ postmortem — the failure was media, and this is a second, independent
 confirmation. **Drive discarded.** Ventoy media now lives on the 250 GB
 SSD only.
 
+### USB disk errors on `illntentpc` (disk not identified)
+Over the 30 days to 2026-09-19 the Windows System log recorded 119 `UASPStor`
+event 129 entries ("Reset to device, `\Device\RaidPort8`, was issued"), 54 `disk`
+event 51 entries (an error "during a paging operation" on `\Device\Harddisk1`) and
+smaller counts of `disk` 153 and NTFS 140, all against a USB-attached disk. It is
+not attached now, so it could not be identified. If it is the 250 GB portable SSD,
+test it before relying on it as a backup target. These errors did not coincide with
+the workstation's unexpected shutdowns (none in the 15 minutes before any of them).
+
+### State snapshot (2026-09-19)
+| Host | Kernel | Uptime | Reboot pending |
+|---|---|---|---|
+| `ubuntu` | 7.0.0-30 | 13 days | yes (7.0.0-31 installed) |
+| `novo1` | 6.8.0-138 | 17 days | yes (6.8.0-139, libc6) |
+| `chromebook` | 6.8.0-139 | 4 days | no |
+
+Docker and k3s are not installed on any host (Phases 2 and 3 not started).
+Ansible (`ansible-core` 2.16.3 in the workstation's WSL) reaches all three
+Linux hosts with `ansible all -m ping` using the inventory in `ansible/`.
+`ubuntu` runs a full desktop install (GNOME/`gdm`, CUPS, avahi, Thunderbird and
+Firefox snaps) — relevant to its planned k3s-server role, both for memory and for
+attack surface.
+
 ## Phase 0 — complete
 
 - [x] Reachable from workstation
@@ -206,3 +310,5 @@ SSD only.
 Phase 1 — Ansible. Inventory covering all three Linux hosts, playbooks for
 users, SSH hardening, base packages, UFW. The repeated manual work in this
 file (three hosts, same commands, three times each) is the argument for it.
+Playbooks for SSH, packages and UFW already exist in `ansible/`, and
+connectivity is verified (see the state snapshot above).

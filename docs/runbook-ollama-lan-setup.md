@@ -7,9 +7,12 @@ machine.
 
 ## Applies to
 Any Linux host in the fleet that will host a model for another host to
-call. Applied to `ubuntu` and `novo1`; briefly applied to `chromebook`,
-since reverted in practice but not in config — see
-`docs/decisions/009-llm-council-fleet-distribution.md`.
+call. Applied to `ubuntu`, `novo1` and (briefly) `chromebook`. As of
+2026-09-19 it is still in place only on `ubuntu` (the council's fallback
+host); it was removed from `chromebook` and from `novo1` — see "Undoing this
+runbook" below and
+`docs/decisions/009-llm-council-fleet-distribution.md`. The council's main
+inference now runs on the Note 10+ instead (`runbook-note10-llama-server.md`).
 
 ## Prerequisites
 - Ollama installed:
@@ -72,6 +75,25 @@ Expected local address is `*:11434` (or `0.0.0.0:11434`), not
   JSON-schema-constrained decoding, to look indistinguishable from a
   hang rather than merely "slow." See ADR 009 for a case where this
   actually happened (`chromebook`, no AVX2 at all).
+
+## Undoing this runbook
+Used on `chromebook` and `novo1` to return them to the SSH-only baseline
+(check `ollama list` and note the model sizes first, and make sure nothing
+still points at the host):
+```
+sudo systemctl disable --now ollama
+sudo rm -f /etc/systemd/system/ollama.service \
+  /etc/systemd/system/ollama.service.d/override.conf
+sudo rmdir /etc/systemd/system/ollama.service.d
+sudo systemctl daemon-reload
+sudo rm -f /usr/local/bin/ollama
+sudo rm -rf /usr/local/lib/ollama /usr/share/ollama     # binary libraries and downloaded models
+sudo ufw delete allow from 192.168.1.0/24 to any port 11434 proto tcp
+sudo userdel ollama; sudo groupdel ollama
+```
+Then confirm: `systemctl is-active ollama` is `inactive`, nothing shows in
+`ss -ltn | grep 11434`, `sudo ufw status` lists only `22/tcp`, and the port is
+unreachable from another host. On `novo1` this freed about 3.4 GB of models.
 
 ## Notes
 Ollama's API has no authentication of its own. Scoping the firewall

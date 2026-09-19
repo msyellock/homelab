@@ -1,6 +1,6 @@
 # homelab
 
-Four-machine bare-metal Linux lab. Built to learn infrastructure by running it rather than reading about it.
+Four-machine bare-metal lab — a Windows workstation and three Linux hosts — plus a repurposed Android phone that runs LLM inference. Built to learn infrastructure by running it rather than reading about it.
 
 Everything here is real hardware — no cloud instances, no VMs standing in for nodes. When something breaks, it breaks for reasons.
 
@@ -8,10 +8,11 @@ Everything here is real hardware — no cloud instances, no VMs standing in for 
 
 | Host | Hardware | OS | Role |
 |---|---|---|---|
-| `illntentpc` | Intel i5-1135G7, 16 GB | Windows 11 + WSL2 | Workstation / Ansible control node |
-| `ubuntu` | ThinkPad T420s, i5-2520M, 8 GB | Ubuntu 24.04 LTS | k3s server *(planned)* |
-| `novo1` | Lenovo B590, i3-2348M, 6 GB | Ubuntu Server 24.04 LTS | k3s agent *(planned)* |
-| `chromebook` | Acer Chromebook 15, Celeron N3350, 4 GB, 29 GB eMMC | Ubuntu Server 24.04.4 | Network services |
+| `illntentpc` | HP Laptop 17, i5-1135G7, 16 GB, 477 GB NVMe | Windows 11 Home + WSL2 (Ubuntu 24.04) | Workstation / Ansible control node |
+| `ubuntu` | ThinkPad T420s, i5-2520M, 8 GB | Ubuntu 24.04 LTS (desktop install) | k3s server *(planned)*; fallback LLM host for the council |
+| `novo1` | Lenovo B590, i3-2348M, 6 GB | Ubuntu Server 24.04 LTS | k3s agent *(planned)*; idle |
+| `chromebook` | Acer Chromebook 15, Celeron N3350, 4 GB, 29 GB eMMC | Ubuntu Server 24.04 | Network services *(planned; nothing deployed yet)* |
+| *(phone, no hostname)* | Samsung Galaxy Note 10+ 5G (SM-N976V), Snapdragon 855, 12 GB | Android 12, debloated, + Termux | LLM inference node: serves two of the council's three panelists ([details](docs/hosts.md#llm-inference-node-galaxy-note-10-sm-n976v)) |
 
 Hostnames match SSH usernames by design — see [`docs/decisions/006-hostname-naming.md`](docs/decisions/006-hostname-naming.md).
 
@@ -28,6 +29,8 @@ Storage: 250 GB portable SSD (backup target). The original 1 TB flash drive fail
 - [x] Drive health baselines captured across the fleet
 - [x] Broadcom BCM43228 wireless working on `novo1`
 - [x] **Phase 0 — SSH key auth, password auth disabled, UFW, hostnames, cross-host name resolution, lid handling — all three Linux hosts**
+- [x] Ansible control node working: `ansible all -m ping` reaches all three Linux hosts from the workstation (verified 2026-09-19)
+- [x] LLM council built and running across the fleet ([ADR 009](docs/decisions/009-llm-council-fleet-distribution.md)); its inference later moved to a repurposed phone, and `novo1`'s Ollama install was removed again (2026-09-19)
 
 **In progress**
 
@@ -50,7 +53,7 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 
 **[Decision: distributing an LLM council across the fleet](docs/decisions/009-llm-council-fleet-distribution.md)**
 
-Three free, local LLMs (Ollama, one per lab host) debate a prompt and vote, with a fourth model curating — no API cost, no rate limits. Built to actually use the fleet's spare compute instead of one box, and it surfaced a real hardware finding along the way: `chromebook`'s CPU has no AVX2 at all, which degrades JSON-schema-constrained decoding badly enough to look like an infinite loop rather than "slow." Code lives in [`services/llm-council/`](services/llm-council).
+Three free, local LLMs debate a prompt and vote, with a fourth model curating — no API cost, no rate limits. It started as one Ollama panelist per lab host, to use the fleet's spare compute, and it surfaced a real hardware finding along the way: `chromebook`'s CPU has no AVX2 at all, which degrades JSON-schema-constrained decoding badly enough to look like an infinite loop rather than "slow." None of the three old lab hosts has AVX2, so inference eventually moved to a spare phone: its Snapdragon 855 runs a from-source llama.cpp build at about 9 tokens/s on a 3B model, against about 1 token/s measured on `novo1`. Two panelists now run there (API-key protected `llama-server`), one runs on the workstation, and `ubuntu` stays as a slow fallback. Code lives in [`services/llm-council/`](services/llm-council).
 
 ## Repository structure
 
@@ -62,6 +65,7 @@ Three free, local LLMs (Ollama, one per lab host) debate a prompt and vote, with
 - [`docs/runbook-lid-switch.md`](docs/runbook-lid-switch.md) — preventing lid close from suspending a laptop server
 - [`docs/runbook-ufw-setup.md`](docs/runbook-ufw-setup.md) — UFW firewall setup with safe enable ordering
 - [`docs/runbook-ollama-lan-setup.md`](docs/runbook-ollama-lan-setup.md) — exposing Ollama's API across the LAN for multi-host inference
+- [`docs/runbook-note10-llama-server.md`](docs/runbook-note10-llama-server.md) — running llama.cpp servers on the Note 10+ (Termux) for the council
 - [`docs/decisions/`](docs/decisions) — architecture decision records
 - [`ansible/inventory.ini`](ansible/inventory.ini) — inventory; [`ansible/ufw.yml`](ansible/ufw.yml), [`ansible/SSH.yml`](ansible/SSH.yml), [`ansible/package.yml`](ansible/package.yml) — playbooks (UFW, password-auth disable, package install)
 - [`services/llm-council/`](services/llm-council) — distributed multi-model deliberation/vote pipeline (see ADR 009)

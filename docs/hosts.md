@@ -94,14 +94,18 @@ else. Effective `sshd` config re-verified on all three hosts on 2026-09-19:
 `passwordauthentication no`, `pubkeyauthentication yes`, `permitrootlogin
 without-password`.
 
-**Finding, leftover private key on `ubuntu`.** Contrary to the paragraph above,
-`ubuntu` holds a passphrase-less private key (`~/.ssh/id_ed25519`, comment
-`ubuntu@ubuntu-ThinkPad-T420s`, created 2025-10-30, before the lab's key setup). It
-is not authorized on any lab host (checked against all three `authorized_keys`), so
-it is not part of the lab's access path; but if it is authorized anywhere else,
-that is a credential sitting unprotected on a machine that is supposed to hold none.
-Delete it if it is not used. Also harmless: `chromebook`'s `authorized_keys` lists
-the workstation key twice.
+**Finding, `ubuntu` holds a private key: its GitHub key.** Contrary to the paragraph
+above, `ubuntu` holds a passphrase-less private key (`~/.ssh/id_ed25519`, comment
+`ubuntu@ubuntu-ThinkPad-T420s`, created 2025-10-30, the day the OS was installed
+and before the lab's key setup). It is not authorized on any lab host (checked
+against all three `authorized_keys`), so it is not part of the lab's access path.
+It *is* the only SSH key registered on the maintainer's GitHub account (fingerprints
+match): it was generated during the initial Git setup on that laptop and gives
+`ubuntu` push access to GitHub. Consequence: anyone who gets a shell on `ubuntu`
+can push to that account's repositories, including this one. Options if that
+matters: protect the key with a passphrase (`ssh-keygen -p`), or replace it with a
+per-repository deploy key. Deleting it would cut off `ubuntu`'s GitHub access.
+Also harmless: `chromebook`'s `authorized_keys` lists the workstation key twice.
 
 ### Firewalls
 

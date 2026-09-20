@@ -265,11 +265,11 @@ Phase 0 is complete when:
 - [X] Three hosts reachable by short name from the workstation
 - [X] No passwords typed for SSH, anywhere
 - [X] Password authentication rejected on all three
-- [ ] Firewalls active, SSH only
+- [X] Firewalls active, SSH only
 - [X] Lids close without consequence
 - [X] Hostnames renamed and surviving reboot
-- [ ] Hosts resolve each other by name
-- [ ] Documented and committed
+- [X] Hosts resolve each other by name
+- [X] Documented and committed
 
 Then Phase 1, where you find out that everything you just did by hand three
 times can be described once.

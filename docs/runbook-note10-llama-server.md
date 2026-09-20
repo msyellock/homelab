@@ -110,3 +110,25 @@ returns 200, and without the header returns 401. The council reads the keys from
   42 °C battery and let it cool; Android's own throttle (thermal status) does not engage
   before that.
 - Android has no firewall: the API key is the only gate on ports 8080/8081.
+
+## Auto-start after a phone reboot (Termux:Boot), added 2026-09-20
+Install the Termux:Boot add-on from the same release channel as Termux (here the GitHub build; verify the published
+`checksums-sha256.txt`), for example over adb: `adb install termux-boot-app_v0.8.1+github.debug.apk`. Then:
+1. Open the Termux:Boot app once (Android will not deliver the boot broadcast to an app that was never launched).
+2. Exempt `com.termux` and `com.termux.boot` from battery optimization: `adb shell cmd deviceidle whitelist +com.termux`
+   (and `+com.termux.boot`).
+3. Create `~/.termux/boot/start-services.sh` (mode 700). It must be safe to run twice, so each piece starts only if it
+   is not already running, and it holds no keys (the start scripts hold those):
+```
+#!/data/data/com.termux/files/usr/bin/sh
+termux-wake-lock
+pgrep -x sshd >/dev/null || sshd
+sleep 3
+cd "$HOME" || exit 1
+pgrep -f -- "--port 8080" >/dev/null || { setsid nohup ./start-llama-server.sh > "$HOME/llama-server.log" 2>&1 < /dev/null & }
+sleep 2
+pgrep -f -- "--port 8081" >/dev/null || { setsid nohup ./start-llama-server-8081.sh > "$HOME/llama-server-8081.log" 2>&1 < /dev/null & }
+```
+Android delivers the boot broadcast after the first unlock. Wireless debugging is not restored by this and gets a new
+port after every reboot. Status: the script was tested by running it twice (no duplicate servers); a real reboot has
+not been tested yet.

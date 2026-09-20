@@ -3,10 +3,11 @@
 | Hostname | Machine | CPU | RAM | Storage | OS | Role |
 |---|---|---|---|---|---|---|
 | `illntentpc` | HP Laptop 17-by4xxx | i5-1135G7 (4C/8T) | 16 GB | 477 GB NVMe (Intel SSDPEKNW512G8) | Windows 11 Home + WSL2 (Ubuntu 24.04) | Workstation / Ansible control |
-| `ubuntu` | ThinkPad T420s | i5-2520M (2C/4T) | 8 GB | 465 GB HDD (7200 RPM) | Ubuntu 24.04 (desktop install) | k3s server *(planned)*; fallback LLM host |
+| `ubuntu` | ThinkPad T420s | i5-2520M (2C/4T) | 8 GB | 465 GB HDD (7200 RPM) | Ubuntu 24.04 (desktop install) | k3s server *(planned)*; fallback LLM host; serves the status file for the ESP32 gadget (port 8090) |
 | `novo1` | Lenovo B590 | i3-2348M (2C/4T) | 6 GB | 465 GB HDD (5400 RPM) | Ubuntu Server 24.04 | k3s agent *(planned)*; idle |
 | `chromebook` | Acer Chromebook 15 (Google "Sand") | Celeron N3350 (2C) | 4 GB | 29.1 GB eMMC | Ubuntu Server 24.04 | Network services *(planned; nothing deployed yet)* |
 | *(none)* | Samsung Galaxy Note 10+ 5G (SM-N976V) | Snapdragon 855 (8C) | 12 GB | 256 GB (229 GB user data) | Android 12 (One UI 4.1), debloated, + Termux | LLM inference node (below) |
+| `esp32-gadget` | ESP32 2.8" touch-screen board (ESP32-WROOM-32E) | ESP32 dual core 240 MHz | 520 KB (no PSRAM) | 4 MB flash + micro SD slot | custom C++ firmware | Fleet-health gadget (below); not the official monitor |
 
 *Verified by polling each host on 2026-09-19 (see "State snapshot" in Notes).*
 
@@ -43,11 +44,35 @@ has no hostname and is not managed like the Linux hosts.
   the workstation). Android has no firewall, so the `llama-server` ports rely on
   their API keys instead: anything on the LAN can reach them and gets `401`
   without the key. Keys live outside this repo.
-- **Caveats:** the servers and `sshd` do not survive a phone reboot (start
-  scripts live on the phone). Sustained load heats it: a 35-minute continuous run
+- **Caveats:** the servers and `sshd` do not survive a phone reboot on their own.
+  Since 2026-09-20 the Termux:Boot add-on (v0.8.1, sideloaded GitHub build, checksum
+  verified) starts `sshd` and both servers from `~/.termux/boot/start-services.sh`
+  after a reboot and one unlock (see the runbook); this has been tested by running
+  the script twice, not by a real reboot. Wireless debugging still has to be
+  re-enabled by hand after a reboot and uses a new port each time. Sustained load heats it: a 35-minute continuous run
   while charging over USB took the battery to 45.8 °C and the CPU to 64 °C, so
   long benchmark runs pause when the battery passes 42 °C.
 - Setup steps: `runbook-note10-llama-server.md`.
+
+### Status gadget: ESP32 touch-screen board (`esp32-gadget`)
+
+A 2.8" 240x320 resistive-touch ESP32 board that shows every machine as an animated character (owl `illntentpc`,
+ox `ubuntu`, fox `novo1`, meerkat `chromebook`, hummingbird Note 10+) whose pose and aura reflect its health, with a
+special-move animation on tap. It is a **personal network gadget, not the official monitor**
+(`decisions/010-esp32-fleet-status-gadget.md`); code and setup are in `../services/esp32-fleet-gadget/`.
+
+- **Network:** Wi-Fi (2.4 GHz only), `192.168.1.168` (address reserved in the router by the owner on 2026-09-20),
+  hostname `esp32-gadget`, MAC `70:4b:ca:8e:09:28`. It opens no ports; it only fetches
+  `http://192.168.1.162:8090/status.json` every 20 s.
+- **Secrets:** none of the lab's. Its Wi-Fi password lives in the chip's NVS, never in the firmware or this repo.
+  It holds no SSH keys.
+- **Data path:** `illntentpc` runs `collector.py` from cron every minute (read-only checks of all five machines) and
+  copies `status.json` to `ubuntu:~/status/`; `ubuntu` serves it (see Firewalls). The fleet key has a passphrase, so
+  cron can only run the collector while an `ssh-agent` holds it; otherwise the run is skipped and the board dims
+  everything after 150 s ("collector offline").
+- **Firmware:** the original AT firmware was backed up before the board was reflashed (kept off-repo); the board ran
+  MicroPython for a day and now runs custom C++ (Arduino core 2.0.17, TFT_eSPI). Flashing is done from Windows
+  because the serial port is not visible inside WSL.
 
 ## Network
 
@@ -68,6 +93,7 @@ renumbering into the static block would be a tidiness improvement, not a fix.
 | `novo1` | `wlp3s0` | Broadcom BCM43228 802.11a/b/g/n | `9c:2a:70:88:4e:e9` | 192.168.1.159 |
 | `chromebook` | `wlp1s0` | Intel Wireless 7265 (dual band AC) | `5c:5f:67:60:f0:ea` | 192.168.1.153 |
 | Note 10+ | `wlan0` | Wi-Fi (phone SoC) | randomized (Android private MAC) | 192.168.1.167 *(DHCP)* |
+| `esp32-gadget` | Wi-Fi | ESP32-WROOM-32E | `70:4b:ca:8e:09:28` | 192.168.1.168 *(reserved in the router, 2026-09-20)* |
 
 **ARP flux on `ubuntu` and `novo1`.** Both machines keep their wired and wireless
 interfaces up on the same subnet. Linux answers ARP for either of its addresses on
@@ -113,7 +139,7 @@ UFW active on all three Linux hosts. Baseline: default deny incoming,
 default allow outgoing, SSH (22/tcp, IPv4 and IPv6) as the only inbound
 rule — see `runbook-ufw-setup.md`.
 
-Only `ubuntu` currently allows inbound `11434/tcp` (Ollama's API) from the
+Only `ubuntu` allows any inbound port beyond SSH: `11434/tcp` (Ollama's API; plus `8090/tcp`, below) from the
 LAN subnet, added on 2026-09-18 for the distributed LLM council project — see
 `runbook-ollama-lan-setup.md` and
 `decisions/009-llm-council-fleet-distribution.md`. It is now the council's
@@ -136,7 +162,15 @@ Default: deny (incoming), allow (outgoing), disabled (routed)
 22/tcp        ALLOW IN  Anywhere
 22/tcp (v6)   ALLOW IN  Anywhere (v6)
 11434/tcp     ALLOW IN  192.168.1.0/24
+8090/tcp      ALLOW IN  192.168.1.0/24
 ```
+
+`8090/tcp` (added 2026-09-20) serves one read-only file, `~/status/status.json`, for the ESP32 gadget through a
+*user* systemd unit (`status-web.service`, Python's `http.server`, `loginctl enable-linger ubuntu` so it runs with
+nobody logged in). The file holds only hostnames, temperatures, load, memory and disk percentages, uptime and alert
+text. Same LAN-only scope and single-operator trust model as the Ollama rule; no authentication. To undo:
+`systemctl --user disable --now status-web`, `sudo ufw delete allow from 192.168.1.0/24 to any port 8090 proto tcp`,
+`sudo loginctl disable-linger ubuntu`.
 
 Ollama's HTTP API has no authentication of its own — the LAN-only scope
 is the only thing standing between "anything on this subnet can submit
@@ -219,6 +253,14 @@ Besides the Intel integrated graphics, the B590 carries an NVIDIA GeForce 610M
 both installed kernels) are installed on this headless server. Not documented
 anywhere before; unused by any workload here.
 
+**Finding and fix, 2026-09-20:** the installed driver (`nvidia-driver-open`, the open kernel modules) does not
+support this GPU, and `nouveau` owns it. Something kept running `modprobe nvidia` about twice a second (7,866
+attempts in one hour, each failing with "already bound to nouveau"), which held a core busy and kept `novo1` at
+about 80 °C under light load; `nvidia-persistenced.service` was in a failed/retry state. Fixed reversibly, nothing
+uninstalled: `systemctl mask --now nvidia-persistenced.service` and `/etc/modprobe.d/zz-disable-nvidia.conf`
+(`blacklist nvidia`, `install nvidia /bin/false`). After a reboot: 0 load attempts in 45 s, load 0.6, about 60 °C.
+To undo, delete that file and unmask the service.
+
 ### Network backend on `novo1`
 Running NetworkManager (`systemd-networkd` disabled, `renderer:
 NetworkManager` declared in netplan) to get persistent WiFi power-save
@@ -282,12 +324,29 @@ not attached now, so it could not be identified. If it is the 250 GB portable SS
 test it before relying on it as a backup target. These errors did not coincide with
 the workstation's unexpected shutdowns (none in the 15 minutes before any of them).
 
+### Scheduled jobs on `illntentpc`
+- Cron (in WSL), every minute: `~/sysmon/collector.py` (the ESP32 gadget's data source; needs a loaded `ssh-agent`, see
+  above). Not in this repo: the copy in `services/esp32-fleet-gadget/collector/` is the source.
+- Windows scheduled task `WSL-KeepAlive` (registered 2026-09-20, at logon): runs
+  `wsl.exe -d Ubuntu-24.04 -e sh -c "exec sleep infinity"` so WSL, and its cron jobs, keep running after a Windows
+  restart. Not yet proven by a restart. Remove with `Unregister-ScheduledTask WSL-KeepAlive`.
+
 ### State snapshot (2026-09-19)
 | Host | Kernel | Uptime | Reboot pending |
 |---|---|---|---|
 | `ubuntu` | 7.0.0-30 | 13 days | yes (7.0.0-31 installed) |
 | `novo1` | 6.8.0-138 | 17 days | yes (6.8.0-139, libc6) |
 | `chromebook` | 6.8.0-139 | 4 days | no |
+
+### State snapshot (2026-09-20, after the reboots)
+| Host | Kernel | Uptime at check | Reboot pending |
+|---|---|---|---|
+| `ubuntu` | 7.0.0-31 | rebooted 2026-09-20 | no |
+| `novo1` | 6.8.0-139 | rebooted 2026-09-20 | no |
+| `chromebook` | 6.8.0-139 | 5 days | no |
+
+The pending reboots recorded above were done on 2026-09-20 (`ubuntu`: plain LVM, no disk encryption, `ssh` and
+`ollama` start at boot; both hosts came back over SSH within about two minutes). `illntentpc` was not rebooted.
 
 Docker and k3s are not installed on any host (Phases 2 and 3 not started).
 Ansible (`ansible-core` 2.16.3 in the workstation's WSL) reaches all three

@@ -1,0 +1,12 @@
+[Unit]
+Description=Read-only status.json for the ESP32 gadget (LAN only, port 8090)
+After=network-online.target
+
+[Service]
+ExecStart=/usr/bin/python3 -m http.server 8090 --bind 0.0.0.0 --directory %h/status
+Restart=on-failure
+StandardOutput=null
+StandardError=null
+
+[Install]
+WantedBy=default.target

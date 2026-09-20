@@ -13,6 +13,7 @@ Everything here is real hardware — no cloud instances, no VMs standing in for 
 | `novo1` | Lenovo B590, i3-2348M, 6 GB | Ubuntu Server 24.04 LTS | k3s agent *(planned)*; idle |
 | `chromebook` | Acer Chromebook 15, Celeron N3350, 4 GB, 29 GB eMMC | Ubuntu Server 24.04 | Network services *(planned; nothing deployed yet)* |
 | *(phone, no hostname)* | Samsung Galaxy Note 10+ 5G (SM-N976V), Snapdragon 855, 12 GB | Android 12, debloated, + Termux | LLM inference node: serves two of the council's three panelists ([details](docs/hosts.md#llm-inference-node-galaxy-note-10-sm-n976v)) |
+| `esp32-gadget` | 2.8" ESP32 touch-screen board (ESP32-WROOM-32E) | custom C++ firmware | Network gadget that shows fleet health as animated characters (not the official monitor): [ADR 010](docs/decisions/010-esp32-fleet-status-gadget.md) |
 
 Hostnames match SSH usernames by design — see [`docs/decisions/006-hostname-naming.md`](docs/decisions/006-hostname-naming.md).
 
@@ -54,6 +55,7 @@ Two separate hypotheses pointed at a failing hard drive along the way — one fr
 **[Decision: distributing an LLM council across the fleet](docs/decisions/009-llm-council-fleet-distribution.md)**
 
 Three free, local LLMs debate a prompt and vote, with a fourth model curating — no API cost, no rate limits. It started as one Ollama panelist per lab host, to use the fleet's spare compute, and it surfaced a real hardware finding along the way: `chromebook`'s CPU has no AVX2 at all, which degrades JSON-schema-constrained decoding badly enough to look like an infinite loop rather than "slow." None of the three old lab hosts has AVX2, so inference eventually moved to a spare phone: its Snapdragon 855 runs a from-source llama.cpp build at about 9 tokens/s on a 3B model, against about 1 token/s measured on `novo1`. Two panelists now run there (API-key protected `llama-server`), one runs on the workstation, and `ubuntu` stays as a slow fallback. Code lives in [`services/llm-council/`](services/llm-council).
+- [`services/esp32-fleet-gadget/`](services/esp32-fleet-gadget) — ESP32 touch-screen gadget that shows fleet health as animated characters (see ADR 010)
 
 ## Repository structure
 

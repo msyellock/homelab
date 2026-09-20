@@ -203,6 +203,7 @@ sudo resize2fs /dev/mapper/ubuntu--vg-ubuntu--lv
 |---|---|---|
 | `novo1` | 98 GB | 455 GB |
 | `chromebook` | 13 GB | 26 GB |
+| `ubuntu` | not recorded | 455 GB (volume group fully allocated as of 2026-09-19; whether the installer or a manual extend did it wasn't recorded) |
 
 ### Broadcom wireless on `novo1`
 BCM43228 had no in-tree driver (`lshw` showed `driver=bcma-pci-bridge`).

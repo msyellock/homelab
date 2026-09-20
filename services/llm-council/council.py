@@ -1,25 +1,27 @@
 #!/usr/bin/env python3
 """
 LLM Council: a 3-model deliberation-and-vote pipeline running entirely on
-local, free, open-weight models via Ollama.
+local, free, open-weight models (Ollama and llama.cpp servers).
 
 Setup:
-    Each panelist runs on its own machine, over the LAN, so no single box
-    needs to hold more than one model in RAM at once. On this box:
-        pip install ollama
+    Panelists run on separate machines over the LAN (see PANEL). A host is
+    either Ollama ("http://<ip>:11434", docs/runbook-ollama-lan-setup.md) or a
+    llama.cpp llama-server ("llamaserver://<ip>:<port>", API key from the
+    LLAMA_SERVER_API_KEY env var or ~/.config/council/llama-server-<ip>-<port>.key;
+    docs/runbook-note10-llama-server.md). On this box:
+        pip install ollama httpx
         ollama pull llama3.2:3b        # curator (small/fast, non-voting, local)
-    On each remote host (Ollama installed, OLLAMA_HOST=0.0.0.0:11434 via a
-    systemd override, port 11434 opened on the LAN in the firewall):
-        ollama pull <that host's assigned model>
+        ollama pull qwen2.5:3b         # Panelist B
     See PANEL below for which model/host pairs this run currently expects.
 
 Usage:
+    python3 council.py --check     # is every host up and does it have its model?
     python3 council.py "should we rewrite the auth service in Rust?"
     python3 council.py --build "sketch out a CLI todo app in Python"
 
 Design:
-    - 3 panelists vote. They are deliberately different labs (Meta / Mistral
-      AI / Alibaba) so their disagreements come from genuinely different
+    - 3 panelists vote. They are deliberately different labs (Meta / Alibaba
+      / Google) so their disagreements come from genuinely different
       training data and tuning, not just prompt variation on one model.
     - The curator (a separate, smaller model) never votes. It only formats
       the cross-pollination packet, plans/delegates build tasks, and writes
@@ -28,8 +30,9 @@ Design:
       actually is.
     - Panelist identities are anonymized to each other (Panelist A/B/C)
       during the rebuttal round to avoid brand-bias between models.
-    - Each panelist lives on its own machine (see PANEL's `host` field), so
-      fan-out is genuinely parallel via asyncio.gather. This isn't just for
+    - Panelists live on separate machines where possible (see PANEL's `host`
+      field), so fan-out runs in parallel via asyncio.gather; A and C currently
+      share one phone, so those two effectively serialize. This isn't just for
       speed: on this fleet, no single box has enough RAM to hold even one
       7-8B model reliably (confirmed -- the kernel OOM-killed Ollama's
       llama-server on a 7.6GB box loading qwen2.5:7b alone, no concurrency
@@ -117,13 +120,11 @@ def make_client(host: str = None):
     return ollama.AsyncClient(host=host) if host else ollama.AsyncClient()
 
 
-# (model, label, host) -- host is None for this box, or "http://<lan-ip>:11434"
-# for a remote panelist. Each host holds only its own one model in RAM.
-# chromebook was in this rotation but its CPU (Celeron N3350) has no AVX2/FMA,
-# which crippled llama.cpp to ~0.6-0.7 tok/s -- swapped to novo1 (i3-2348M,
-# also no AVX2 but has AVX + 4 real cores @ 2.3GHz, and is otherwise idle
-# now that its unrelated services were removed). Model kept as gemma2:2b to
-# preserve the Google lab slot; only the host moved.
+# (model, label, host) -- host is None for this box (local Ollama), "http://<lan-ip>:11434"
+# for a remote Ollama, or "llamaserver://<ip>:<port>" for a llama.cpp llama-server (API key
+# required). A and C run on the Note 10+ (Snapdragon 855 + llama.cpp, ~9 tok/s on a 3B model);
+# the old laptops have no AVX2 and managed ~1 tok/s or worse. History and measurements: ADR 009
+# and its 2026-09-19 addendum.
 PANEL = [
     ("llama3.2-3b", "Panelist A (Llama 3.2 / Meta)", "llamaserver://192.168.1.167:8081"),  # Note 10+ (llama.cpp, 2nd server)
     ("qwen2.5:3b", "Panelist B (Qwen 2.5 / Alibaba)", None),                          # local
@@ -846,8 +847,8 @@ async def run_council(topic: str, build: bool = False) -> dict:
         with open(partial, "w") as f:
             json.dump({"topic": topic, "started": started, "timings": timings, "dropped": dropped, **state}, f, indent=2)
 
-    # Genuinely parallel: each panelist lives on its own machine (see PANEL's host
-    # field). return_exceptions so one dead/hung host degrades the panel instead of
+    # Fan out with asyncio.gather (A and C share the phone, so those two effectively
+    # serialize). return_exceptions so one dead/hung host degrades the panel instead of
     # killing the run.
     plog("stage 1: initial positions")
     t0 = time.monotonic()

@@ -1,0 +1,14 @@
+# Safety net: things that must never be committed from this lab
+__pycache__/
+*.pyc
+# LLM council output when run from inside the repo
+run_*.json
+*.partial.json
+projects/
+# secrets
+*.key
+.env
+.bench_key
+.llama_key*
+id_*
+!id_*.pub

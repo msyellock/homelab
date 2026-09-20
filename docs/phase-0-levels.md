@@ -249,7 +249,7 @@ argument for Phase 1.
 **Verification.**
 
 - `docs/hosts.md` — updated hostnames, all checkboxes ticked
-- `docs/ssh-setup.md` — a runbook someone else could follow
+- `docs/runbook-ssh-keys.md` — a runbook someone else could follow
 - `docs/decisions/` — one ADR for a choice you made along the way
 
 **Questions.** Could you rebuild any one of these machines from what you

@@ -59,6 +59,8 @@ Three free, local LLMs debate a prompt and vote, with a fourth model curating �
 
 - [`docs/hosts.md`](docs/hosts.md) — machine inventory, network layout, hardware baselines, Phase 0 status
 - [`docs/postmortem-boot-failure.md`](docs/postmortem-boot-failure.md) — install failure investigation
+- [`docs/phase-0-levels.md`](docs/phase-0-levels.md) — Phase 0 as a ten-level checklist (SSH, firewall, hostnames, and so on)
+- [`docs/runbook-ubuntu-install.md`](docs/runbook-ubuntu-install.md) — bare-metal Ubuntu Server install with verified media
 - [`docs/runbook-hostname-rename.md`](docs/runbook-hostname-rename.md) — hostname rename and cross-host resolution procedure
 - [`docs/runbook-ssh-keys.md`](docs/runbook-ssh-keys.md) — SSH key generation and distribution across the fleet
 - [`docs/runbook-disable-password-auth.md`](docs/runbook-disable-password-auth.md) — disabling SSH password authentication

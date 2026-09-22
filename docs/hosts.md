@@ -190,6 +190,14 @@ scoped from the start — less exposed surface to a future SSH CVE or a
 misconfiguration that weakens auth, not a response to any current
 active risk.
 
+**fail2ban added 2026-09-22.** All three hosts run `fail2ban` (`ansible/fail2ban.yml`) watching
+`sshd` via the systemd backend: 5 failures in 10 minutes bans an IP for 1 hour, doubling on repeat
+offenses up to a 1-week cap. `192.168.1.0/24` and loopback are whitelisted so the operator's own
+LAN traffic can never trigger a ban. This doesn't change the unscoped-SSH finding above — key-only
+auth already made brute-forcing credentials infeasible — it just cuts the noise from continuous
+scan traffic on a port still open to `Anywhere`. `sudo fail2ban-client status sshd` shows current
+bans on any host.
+
 ### Name resolution
 
 `/etc/hosts` on each Linux host contains entries for the other two,

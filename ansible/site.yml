@@ -1,0 +1,5 @@
+---
+- import_playbook: SSH.yml
+- import_playbook: ufw.yml
+- import_playbook: package.yml
+- import_playbook: fail2ban.yml

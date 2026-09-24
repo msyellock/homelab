@@ -8,6 +8,7 @@
         name: fail2ban
         state: present
         update_cache: yes
+        cache_valid_time: 3600
 
     - name: Configure sshd jail
       ansible.builtin.copy:
@@ -17,9 +18,8 @@
         mode: '0644'
         content: |
           [DEFAULT]
-          ignoreip = 127.0.0.1/8 ::1 192.168.1.0/24
+          ignoreip = 127.0.0.1/8 ::1 192.168.1.0/24 fe80::/10 fc00::/7
           bantime.increment = true
-          bantime.factor = 2
           bantime.maxtime = 1w
 
           [sshd]
@@ -30,6 +30,34 @@
           findtime = 10m
           bantime = 1h
       notify: restart fail2ban
+
+    # fail2ban.local, not jail.local: dbpurgeage is a daemon setting. The default (1d)
+    # makes the ban history expire in about a day, so repeat-offender escalation
+    # practically never reached bantime.maxtime.
+    - name: Keep ban history as long as the maximum ban
+      ansible.builtin.copy:
+        dest: /etc/fail2ban/fail2ban.local
+        owner: root
+        group: root
+        mode: '0644'
+        content: |
+          [Definition]
+          dbpurgeage = 1w
+      notify: restart fail2ban
+
+    # A syntax/section check only, and it reads the live directory, so it runs after
+    # the files are written: it stops a bad config from being restarted into, but does
+    # not remove it from disk. Skipped under --check.
+    - name: Validate fail2ban configuration
+      ansible.builtin.command: fail2ban-client -t
+      changed_when: false
+
+    # Restart now, not at end of play, so a failure in the enable/start task below
+    # can't skip the restart. Not covered: a failure before this point (validation,
+    # the second copy) still leaves changed files unapplied on re-run. force_handlers
+    # is deliberately not used: it would restart onto a config that failed validation.
+    - name: Apply config changes
+      ansible.builtin.meta: flush_handlers
 
     - name: Enable and start fail2ban
       ansible.builtin.systemd:

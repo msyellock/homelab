@@ -191,12 +191,19 @@ misconfiguration that weakens auth, not a response to any current
 active risk.
 
 **fail2ban added 2026-09-22.** All three hosts run `fail2ban` (`ansible/fail2ban.yml`) watching
-`sshd` via the systemd backend: 5 failures in 10 minutes bans an IP for 1 hour, doubling on repeat
-offenses up to a 1-week cap. `192.168.1.0/24` and loopback are whitelisted so the operator's own
-LAN traffic can never trigger a ban. This doesn't change the unscoped-SSH finding above — key-only
-auth already made brute-forcing credentials infeasible — it just cuts the noise from continuous
-scan traffic on a port still open to `Anywhere`. `sudo fail2ban-client status sshd` shows current
-bans on any host.
+`sshd` via the systemd backend: 5 failures in 10 minutes bans an IP for 1 hour; a repeat offender
+gets 2h, 4h, 8h... up to a 1-week cap, with ban history kept for at least a week. `192.168.1.0/24`,
+loopback and IPv6 link-local/ULA (`fe80::/10`, `fc00::/7`) are whitelisted, so the operator's own
+LAN traffic can't trigger a ban; global IPv6 is not covered (the delegated prefix can change, so it
+isn't hardcoded). This doesn't change the unscoped-SSH finding above — key-only auth already made
+brute-forcing credentials infeasible — it was meant to cut the noise from scan traffic on a port
+still open to `Anywhere`. Checked 2026-09-24: no scan traffic has reached any host since deployment
+(0 failures, 0 bans; no sshd journal lines from outside the LAN on `novo1` and `chromebook`;
+`ubuntu` had only just booted), so the jail is defence in depth, not yet a measured noise reduction.
+Bans use the `nftables` action. Checked 2026-09-24 on `novo1` with UFW active: a manual `banip` of
+`chromebook`'s address made its connection to port 22 get refused, and `unbanip` restored it. The
+detection path (real failed logins leading to a ban) is untested. `sudo fail2ban-client status sshd`
+shows current bans on any host.
 
 ### Name resolution
 
@@ -382,5 +389,5 @@ attack surface.
 Phase 1 — Ansible. Inventory covering all three Linux hosts, playbooks for
 users, SSH hardening, base packages, UFW. The repeated manual work in this
 file (three hosts, same commands, three times each) is the argument for it.
-Playbooks for SSH, packages and UFW already exist in `ansible/`, and
-connectivity is verified (see the state snapshot above).
+Playbooks for SSH, packages, UFW and fail2ban already exist in `ansible/` (`site.yml` runs them
+all), and connectivity is verified (see the state snapshot above).
